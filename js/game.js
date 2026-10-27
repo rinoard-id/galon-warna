@@ -1,5 +1,5 @@
 /* 
-  Water Sort Puzzle - Game Logic (Gallon Edition with Web Audio SFX, Instant Move Handler, Timer, and Zero-Scroll Scaling)
+  Water Sort Puzzle - Game Logic (Custom Rule Edition: Pour anywhere as long as capacity permits)
 */
 
 class SoundManager {
@@ -38,9 +38,7 @@ class SoundManager {
 
             osc.start();
             osc.stop(this.audioCtx.currentTime + 0.08);
-        } catch (e) {
-            // Audio context policy fallback
-        }
+        } catch (e) {}
     }
 
     playPour() {
@@ -48,7 +46,6 @@ class SoundManager {
             this.init();
             if (!this.audioCtx) return;
             
-            // Create white noise buffer for water pouring sound effect
             const bufferSize = this.audioCtx.sampleRate * 0.25;
             const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -75,9 +72,7 @@ class SoundManager {
 
             noise.start();
             noise.stop(this.audioCtx.currentTime + 0.25);
-        } catch (e) {
-            // Audio context policy fallback
-        }
+        } catch (e) {}
     }
 }
 
@@ -87,8 +82,8 @@ class WaterSortGame {
         this.maxCapacity = 4;
         this.soundManager = new SoundManager();
         this.state = {
-            bottles: [],
-            selectedBottle: null,
+            gallons: [],
+            selectedGallon: null,
             moves: 0,
             history: [],
             timeLeft: 0,
@@ -102,7 +97,7 @@ class WaterSortGame {
     }
 
     initDOM() {
-        this.boardEl = document.getElementById('bottle-board');
+        this.boardEl = document.getElementById('gallon-board');
         this.levelTitleEl = document.getElementById('level-title');
         this.moveCountEl = document.getElementById('move-count');
         this.timerDisplayEl = document.getElementById('timer-display');
@@ -133,8 +128,8 @@ class WaterSortGame {
         this.currentLevelIndex = index;
         const levelData = levels[index];
 
-        this.state.bottles = levelData.bottles.map(b => [...b]);
-        this.state.selectedBottle = null;
+        this.state.gallons = levelData.bottles.map(b => [...b]);
+        this.state.selectedGallon = null;
         this.state.moves = 0;
         this.state.history = [];
         this.state.timeLeft = levelData.timeLimit || 120;
@@ -180,7 +175,7 @@ class WaterSortGame {
     */
     renderBoard() {
         this.boardEl.innerHTML = '';
-        const numGallons = this.state.bottles.length;
+        const numGallons = this.state.gallons.length;
 
         let cols = 3;
         if (numGallons > 6 && numGallons <= 9) cols = 3;
@@ -189,65 +184,67 @@ class WaterSortGame {
 
         this.boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-        let bottleWidth = 62;
-        let bottleHeight = 150;
+        let gallonWidth = 82;
+        let gallonHeight = 125;
         if (numGallons > 8 && numGallons <= 12) {
-            bottleWidth = 52;
-            bottleHeight = 125;
+            gallonWidth = 70;
+            gallonHeight = 110;
         } else if (numGallons > 12) {
-            bottleWidth = 44;
-            bottleHeight = 110;
+            gallonWidth = 60;
+            gallonHeight = 98;
         }
 
-        this.boardEl.style.setProperty('--bottle-w', `${bottleWidth}px`);
-        this.boardEl.style.setProperty('--bottle-h', `${bottleHeight}px`);
+        this.boardEl.style.setProperty('--gallon-w', `${gallonWidth}px`);
+        this.boardEl.style.setProperty('--gallon-h', `${gallonHeight}px`);
 
-        this.state.bottles.forEach((bottle, index) => {
-            const bottleEl = document.createElement('div');
-            bottleEl.className = 'bottle';
-            if (this.state.selectedBottle === index) {
-                bottleEl.classList.add('selected');
+        this.state.gallons.forEach((gallon, index) => {
+            const gallonEl = document.createElement('div');
+            gallonEl.className = 'gallon';
+            if (this.state.selectedGallon === index) {
+                gallonEl.classList.add('selected');
             }
-            if (this.isBottleCompleted(bottle)) {
-                bottleEl.classList.add('completed');
+            if (this.isGallonCompleted(gallon)) {
+                gallonEl.classList.add('completed');
             }
 
-            bottle.forEach(color => {
+            gallon.forEach(color => {
                 const layerEl = document.createElement('div');
                 layerEl.className = `liquid-layer color-${color}`;
-                bottleEl.appendChild(layerEl);
+                gallonEl.appendChild(layerEl);
             });
 
-            bottleEl.addEventListener('click', () => this.handleBottleClick(index));
-            this.boardEl.appendChild(bottleEl);
+            gallonEl.addEventListener('click', () => this.handleGallonClick(index));
+            this.boardEl.appendChild(gallonEl);
         });
     }
 
-    handleBottleClick(index) {
-        const { selectedBottle, bottles } = this.state;
+    /* 
+      --- CUSTOM RULE CLICK & POUR STATE MACHINE ---
+      Rule: Can pour into ANY container as long as capacity permits (no color restriction).
+    */
+    handleGallonClick(index) {
+        const { selectedGallon, gallons } = this.state;
 
-        if (selectedBottle === null) {
-            if (bottles[index].length === 0) return;
-            if (this.isBottleCompleted(bottles[index])) return;
+        if (selectedGallon === null) {
+            if (gallons[index].length === 0) return;
+            if (this.isGallonCompleted(gallons[index])) return;
 
-            this.state.selectedBottle = index;
+            this.state.selectedGallon = index;
             this.soundManager.playClick();
             this.renderBoard();
         } else {
-            if (selectedBottle === index) {
-                this.state.selectedBottle = null;
+            if (selectedGallon === index) {
+                this.state.selectedGallon = null;
                 this.soundManager.playClick();
                 this.renderBoard();
             } else {
-                if (this.isValidPour(selectedBottle, index)) {
+                if (this.isValidPour(selectedGallon, index)) {
                     this.saveHistory();
-                    
-                    // Execute pour instantly & play pouring sound
-                    this.pourWater(selectedBottle, index);
+                    this.pourWater(selectedGallon, index);
                     this.soundManager.playPour();
                     this.state.moves++;
                     this.updateMovesDisplay();
-                    this.state.selectedBottle = null;
+                    this.state.selectedGallon = null;
 
                     if (this.checkWin()) {
                         this.stopTimer();
@@ -255,13 +252,8 @@ class WaterSortGame {
                     }
                     this.renderBoard();
                 } else {
-                    if (bottles[index].length > 0 && !this.isBottleCompleted(bottles[index])) {
-                        this.state.selectedBottle = index;
-                        this.soundManager.playClick();
-                    } else {
-                        this.state.selectedBottle = null;
-                        this.soundManager.playClick();
-                    }
+                    this.state.selectedGallon = null;
+                    this.soundManager.playClick();
                     this.renderBoard();
                 }
             }
@@ -269,55 +261,55 @@ class WaterSortGame {
     }
 
     isValidPour(fromIdx, toIdx) {
-        const fromBottle = this.state.bottles[fromIdx];
-        const toBottle = this.state.bottles[toIdx];
+        const fromGallon = this.state.gallons[fromIdx];
+        const toGallon = this.state.gallons[toIdx];
 
-        if (fromBottle.length === 0) return false;
-        if (toBottle.length >= this.maxCapacity) return false;
+        if (fromGallon.length === 0) return false;
+        if (toGallon.length >= this.maxCapacity) return false;
+        if (fromIdx === toIdx) return false;
 
-        const topColor = fromBottle[fromBottle.length - 1];
-        if (toBottle.length === 0) return true;
-
-        return topColor === toBottle[toBottle.length - 1];
+        // Custom rule: Can pour into ANY container regardless of color!
+        return true;
     }
 
     pourWater(fromIdx, toIdx) {
-        const fromBottle = this.state.bottles[fromIdx];
-        const toBottle = this.state.bottles[toIdx];
-        const topColor = fromBottle[fromBottle.length - 1];
+        const fromGallon = this.state.gallons[fromIdx];
+        const toGallon = this.state.gallons[toIdx];
+        const topColor = fromGallon[fromGallon.length - 1];
 
+        // Transfer consecutive matching top layers of that color that can fit
         let transferCount = 0;
-        for (let i = fromBottle.length - 1; i >= 0; i--) {
-            if (fromBottle[i] === topColor) transferCount++;
+        for (let i = fromGallon.length - 1; i >= 0; i--) {
+            if (fromGallon[i] === topColor) transferCount++;
             else break;
         }
 
-        const spaceAvailable = this.maxCapacity - toBottle.length;
+        const spaceAvailable = this.maxCapacity - toGallon.length;
         const actualTransfer = Math.min(transferCount, spaceAvailable);
 
         for (let i = 0; i < actualTransfer; i++) {
-            toBottle.push(fromBottle.pop());
+            toGallon.push(fromGallon.pop());
         }
     }
 
     checkWin() {
-        for (let bottle of this.state.bottles) {
-            if (bottle.length === 0) continue;
-            if (bottle.length < this.maxCapacity) return false;
-            const firstColor = bottle[0];
-            if (!bottle.every(c => c === firstColor)) return false;
+        for (let gallon of this.state.gallons) {
+            if (gallon.length === 0) continue;
+            if (gallon.length < this.maxCapacity) return false;
+            const firstColor = gallon[0];
+            if (!gallon.every(c => c === firstColor)) return false;
         }
         return true;
     }
 
-    isBottleCompleted(bottle) {
-        if (bottle.length !== this.maxCapacity) return false;
-        return bottle.every(c => c === bottle[0]);
+    isGallonCompleted(gallon) {
+        if (gallon.length !== this.maxCapacity) return false;
+        return gallon.every(c => c === gallon[0]);
     }
 
     saveHistory() {
         this.state.history.push({
-            bottles: this.state.bottles.map(b => [...b]),
+            gallons: this.state.gallons.map(b => [...b]),
             moves: this.state.moves,
             timeLeft: this.state.timeLeft
         });
@@ -327,10 +319,10 @@ class WaterSortGame {
         if (this.state.history.length === 0) return;
         this.soundManager.playClick();
         const prev = this.state.history.pop();
-        this.state.bottles = prev.bottles;
+        this.state.gallons = prev.gallons;
         this.state.moves = prev.moves;
         this.state.timeLeft = prev.timeLeft;
-        this.state.selectedBottle = null;
+        this.state.selectedGallon = null;
         this.updateMovesDisplay();
         this.updateTimerDisplay();
         this.renderBoard();

@@ -8,9 +8,9 @@
     --accent-blue: #3182CE;
     --accent-green: #38A169;
     --modal-bg: #1A202C;
-    --bottle-bg: rgba(255, 255, 255, 0.03);
-    --bottle-border: rgba(255, 255, 255, 0.35);
-    --bottle-neck: rgba(255, 255, 255, 0.5);
+    --gallon-bg: rgba(255, 255, 255, 0.04);
+    --gallon-border: rgba(255, 255, 255, 0.4);
+    --gallon-cap: #007AFF; /* Signature blue 19L gallon cap */
     --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
     
     /* Vibrant Liquid Palette */
@@ -144,19 +144,19 @@ body {
     transform: scale(0.9);
 }
 
-/* Main Board (No Scroll, Auto-Fit) */
+/* Main Board (No Scroll, Auto-Fit with top clearance for gallon caps) */
 .game-main {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    padding: 8px 0;
+    padding: 24px 0 8px 0;
 }
 
-.bottle-board {
+.gallon-board {
     display: grid;
-    gap: 12px;
+    gap: 16px 12px;
     width: 100%;
     height: 100%;
     justify-content: center;
@@ -165,72 +165,80 @@ body {
     align-items: center;
 }
 
-/* Gallon Design */
-.bottle {
-    width: var(--bottle-w, 64px);
-    height: var(--bottle-h, 150px);
-    border: 2.5px solid var(--bottle-border);
-    border-top: 5px solid var(--bottle-neck);
-    border-bottom-left-radius: 28px;
-    border-bottom-right-radius: 28px;
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
-    background: var(--bottle-bg);
+/* Authentic 19L Water Gallon Shape ("Gemuk" / Bulbous 19L Jug Style) */
+.gallon {
+    width: var(--gallon-w, 82px);
+    height: var(--gallon-h, 125px);
+    border: 2.5px solid var(--gallon-border);
+    border-top: none;
+    border-bottom-left-radius: 38px;
+    border-bottom-right-radius: 38px;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    background: var(--gallon-bg);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column-reverse;
     justify-content: flex-start;
-    padding: 5px;
+    padding: 6px;
     cursor: pointer;
     position: relative;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     transform-origin: bottom center;
+    margin-top: 24px;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 }
 
-.bottle::before {
+/* Gallon Narrow Neck */
+.gallon::before {
     content: '';
     position: absolute;
-    top: -11px;
+    top: -16px;
     left: 50%;
     transform: translateX(-50%);
-    width: 26px;
-    height: 6px;
-    background: var(--bottle-neck);
-    border-radius: 3px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    width: 28px;
+    height: 16px;
+    background: var(--gallon-bg);
+    border: 2.5px solid var(--gallon-border);
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    pointer-events: none;
 }
 
-.bottle::after {
+/* Gallon Blue Cap (19L Dispenser Cap) */
+.gallon::after {
     content: '';
     position: absolute;
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    height: 3px;
-    background: var(--bottle-border);
-    border-radius: 2px;
-    opacity: 0.6;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 9px;
+    background: var(--gallon-cap);
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    pointer-events: none;
 }
 
-.bottle.selected {
-    transform: translateY(-16px) scale(1.05);
+.gallon.selected {
+    transform: translateY(-18px) scale(1.05);
     border-color: #63B3ED;
-    box-shadow: 0 16px 32px rgba(99, 179, 237, 0.4);
+    box-shadow: 0 18px 36px rgba(99, 179, 237, 0.45);
 }
 
-.bottle.pouring {
+.gallon.pouring {
     animation: gallon-pour 0.35s ease-in-out forwards;
 }
 
 @keyframes gallon-pour {
-    0% { transform: translateY(-16px) rotate(0deg) scale(1.05); }
-    50% { transform: translateY(-24px) rotate(28deg) translateX(12px) scale(1.02); }
-    100% { transform: translateY(-16px) rotate(0deg) scale(1.05); }
+    0% { transform: translateY(-18px) rotate(0deg) scale(1.05); }
+    50% { transform: translateY(-26px) rotate(30deg) translateX(14px) scale(1.02); }
+    100% { transform: translateY(-18px) rotate(0deg) scale(1.05); }
 }
 
-.bottle.completed {
+.gallon.completed {
     animation: pulse-success 0.6s ease;
 }
 
@@ -240,7 +248,7 @@ body {
     100% { transform: scale(1); }
 }
 
-/* Liquid Layers */
+/* Liquid Layers in 19L Gallon */
 .liquid-layer {
     width: 100%;
     height: 25%;
@@ -249,8 +257,8 @@ body {
 }
 
 .liquid-layer:first-child {
-    border-bottom-left-radius: 22px;
-    border-bottom-right-radius: 22px;
+    border-bottom-left-radius: 32px;
+    border-bottom-right-radius: 32px;
 }
 
 /* Color Mappings */
@@ -400,7 +408,7 @@ body {
     margin-top: 10px;
 }
 
-.win-content .win-icon {
+.win-content .unit-icon, .win-content .win-icon {
     font-size: 2.5rem;
     margin-bottom: 10px;
 }
