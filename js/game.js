@@ -1,5 +1,5 @@
 /* 
-  Color Sort - Pour & Solve | Complete Game Logic & UI State Machine
+  Color Sort - Pour & Solve | Complete Game Logic & UI State Machine with Directional Animations & Toasts
 */
 
 class SoundManager {
@@ -100,7 +100,8 @@ class ColorSortGame {
             isTimerRunning: false,
             undoCount: 3,
             hintCount: 1,
-            addSlotCount: 1
+            addSlotCount: 1,
+            toastTimeout: null
         };
 
         this.loadProgress();
@@ -138,6 +139,11 @@ class ColorSortGame {
         this.hintCountEl = document.querySelector('#btn-hint .powerup-count');
         this.addSlotCountEl = document.querySelector('#btn-add-slot .powerup-count');
 
+        // Toast
+        this.toastEl = document.getElementById('toast-notification');
+        this.toastTitleEl = document.getElementById('toast-title');
+        this.toastDescEl = document.getElementById('toast-desc');
+
         // Modals
         this.levelModal = document.getElementById('level-modal');
         this.winModal = document.getElementById('win-modal');
@@ -152,6 +158,21 @@ class ColorSortGame {
 
         this.updateCoinDisplay();
         this.renderLevelGrid();
+    }
+
+    showToast(title, desc) {
+        if (!this.toastEl) return;
+        this.toastTitleEl.textContent = title;
+        this.toastDescEl.textContent = desc;
+        this.toastEl.classList.add('show');
+
+        if (this.state.toastTimeout) {
+            clearTimeout(this.state.toastTimeout);
+        }
+
+        this.state.toastTimeout = setTimeout(() => {
+            this.toastEl.classList.remove('show');
+        }, 2200);
     }
 
     switchScreen(screenName) {
@@ -225,7 +246,7 @@ class ColorSortGame {
         if (this.addSlotCountEl) this.addSlotCountEl.textContent = this.state.addSlotCount;
     }
 
-    renderBoard() {
+    renderBoard(pouringIdx = null, pourClass = 'pouring-left') {
         this.boardEl.innerHTML = '';
         const numGallons = this.state.gallons.length;
 
@@ -235,14 +256,14 @@ class ColorSortGame {
 
         this.boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-        let gallonWidth = 76;
-        let gallonHeight = 116;
+        let gallonWidth = 72;
+        let gallonHeight = 115;
         if (numGallons > 8 && numGallons <= 12) {
-            gallonWidth = 66;
-            gallonHeight = 102;
+            gallonWidth = 62;
+            gallonHeight = 100;
         } else if (numGallons > 12) {
-            gallonWidth = 58;
-            gallonHeight = 90;
+            gallonWidth = 54;
+            gallonHeight = 88;
         }
 
         this.boardEl.style.setProperty('--gallon-w', `${gallonWidth}px`);
@@ -253,6 +274,9 @@ class ColorSortGame {
             gallonEl.className = 'gallon';
             if (this.state.selectedGallon === index) {
                 gallonEl.classList.add('selected');
+            }
+            if (pouringIdx === index) {
+                gallonEl.classList.add(pourClass);
             }
             if (this.isGallonCompleted(gallon)) {
                 gallonEl.classList.add('completed');
@@ -269,18 +293,18 @@ class ColorSortGame {
         });
     }
 
-    /* 
-      --- CLASSIC WATER SORT POURING RULES ---
-      Rule 1: Can only pour the top contiguous block of identical color from source.
-      Rule 2: Destination must have capacity available.
-      Rule 3: Destination must either be empty OR have its top color matching the pouring color.
-    */
     handleGallonClick(index) {
         const { selectedGallon, gallons } = this.state;
 
         if (selectedGallon === null) {
-            if (gallons[index].length === 0) return;
-            if (this.isGallonCompleted(gallons[index])) return;
+            if (gallons[index].length === 0) {
+                this.showToast('Botol kosong', 'Pilih botol yang berisi cairan.');
+                return;
+            }
+            if (this.isGallonCompleted(gallons[index])) {
+                this.showToast('Botol selesai', 'Botol ini sudah tersusun sempurna.');
+                return;
+            }
 
             this.state.selectedGallon = index;
             this.soundManager.playClick();
@@ -291,10 +315,33 @@ class ColorSortGame {
                 this.soundManager.playClick();
                 this.renderBoard();
             } else {
-                if (this.isValidPour(selectedGallon, index)) {
-                    this.saveHistory();
+                const fromGallon = gallons[selectedGallon];
+                const toGallon = gallons[index];
+
+                if (toGallon.length >= this.maxCapacity) {
+                    this.showToast('Botol penuh', 'Tidak ada ruang lagi di botol tujuan.');
+                    this.state.selectedGallon = null;
+                    this.soundManager.playClick();
+                    this.renderBoard();
+                    return;
+                }
+
+                if (!this.isValidPour(selectedGallon, index)) {
+                    this.showToast('Tidak bisa dipindahkan', 'Warna tidak cocok dengan lapisan atas.');
+                    this.state.selectedGallon = null;
+                    this.soundManager.playClick();
+                    this.renderBoard();
+                    return;
+                }
+
+                // Valid pour with directional animation
+                this.saveHistory();
+                const pourClass = index > selectedGallon ? 'pouring-right' : 'pouring-left';
+                this.renderBoard(selectedGallon, pourClass);
+                this.soundManager.playPour();
+
+                setTimeout(() => {
                     this.pourWater(selectedGallon, index);
-                    this.soundManager.playPour();
                     this.state.moves++;
                     this.state.selectedGallon = null;
 
@@ -303,11 +350,7 @@ class ColorSortGame {
                         this.triggerWin();
                     }
                     this.renderBoard();
-                } else {
-                    this.state.selectedGallon = null;
-                    this.soundManager.playClick();
-                    this.renderBoard();
-                }
+                }, 300);
             }
         }
     }
@@ -322,7 +365,6 @@ class ColorSortGame {
 
         const topColor = fromGallon[fromGallon.length - 1];
 
-        // If destination is not empty, its top color must match
         if (toGallon.length > 0) {
             const destTopColor = toGallon[toGallon.length - 1];
             if (destTopColor !== topColor) return false;
@@ -336,7 +378,6 @@ class ColorSortGame {
         const toGallon = this.state.gallons[toIdx];
         const topColor = fromGallon[fromGallon.length - 1];
 
-        // Count how many consecutive layers of topColor are at the top of fromGallon
         let transferCount = 0;
         for (let i = fromGallon.length - 1; i >= 0; i--) {
             if (fromGallon[i] === topColor) transferCount++;
@@ -375,7 +416,10 @@ class ColorSortGame {
     }
 
     undo() {
-        if (this.state.history.length === 0 || this.state.undoCount <= 0) return;
+        if (this.state.history.length === 0 || this.state.undoCount <= 0) {
+            this.showToast('Tidak bisa Undo', 'Batas undo habis atau belum ada langkah.');
+            return;
+        }
         this.soundManager.playClick();
         this.state.undoCount--;
         const prev = this.state.history.pop();
@@ -388,7 +432,10 @@ class ColorSortGame {
     }
 
     addExtraSlot() {
-        if (this.state.addSlotCount <= 0) return;
+        if (this.state.addSlotCount <= 0) {
+            this.showToast('Slot Penuh', 'Tambahan slot sudah digunakan.');
+            return;
+        }
         this.soundManager.playClick();
         this.state.addSlotCount--;
         this.state.gallons.push([]);
@@ -403,7 +450,7 @@ class ColorSortGame {
 
     triggerWin() {
         const levelNum = this.currentLevelIndex + 1;
-        const stars = 3; // 3 stars for victory
+        const stars = 3;
         this.playerData.stars[this.currentLevelIndex] = stars;
         if (this.currentLevelIndex + 1 > this.playerData.unlockedLevel) {
             this.playerData.unlockedLevel = this.currentLevelIndex + 1;
@@ -456,13 +503,11 @@ class ColorSortGame {
     }
 
     bindEvents() {
-        // Home Screen Play Button
         document.getElementById('btn-play-hero').addEventListener('click', () => {
             this.soundManager.playClick();
             this.loadLevel(this.currentLevelIndex);
         });
 
-        // Dock Nav Modals
         document.querySelectorAll('.dock-nav-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.soundManager.playClick();
@@ -475,7 +520,6 @@ class ColorSortGame {
             });
         });
 
-        // Close Modals
         document.querySelectorAll('.close-modal-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.soundManager.playClick();
@@ -483,14 +527,12 @@ class ColorSortGame {
             });
         });
 
-        // Gameplay Powerups
         document.getElementById('btn-undo').addEventListener('click', () => this.undo());
         document.getElementById('btn-add-slot').addEventListener('click', () => this.addExtraSlot());
         document.getElementById('btn-hint').addEventListener('click', () => {
-            alert('Tip: Pindahkan warna yang sama ke botol kosong atau botol dengan warna atas yang cocok!');
+            this.showToast('Petunjuk', 'Pindahkan warna yang sama ke botol kosong atau botol dengan warna atas yang cocok!');
         });
 
-        // Pause Modal
         document.getElementById('btn-pause').addEventListener('click', () => {
             this.soundManager.playClick();
             this.stopTimer();
@@ -519,7 +561,6 @@ class ColorSortGame {
             this.switchScreen('home');
         });
 
-        // Win Modal
         document.getElementById('btn-next-modal').addEventListener('click', () => {
             this.soundManager.playClick();
             this.winModal.style.display = 'none';
@@ -542,7 +583,6 @@ class ColorSortGame {
             this.levelModal.style.display = 'flex';
         });
 
-        // Settings toggles
         const sfxToggle = document.getElementById('setting-sfx');
         if (sfxToggle) {
             sfxToggle.addEventListener('change', (e) => {

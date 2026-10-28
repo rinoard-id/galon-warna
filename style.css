@@ -11,6 +11,8 @@
     --accent-yellow: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
     --accent-yellow-solid: #F59E0B;
     --modal-bg: #111827;
+    --gallon-border: rgba(255, 255, 255, 0.45);
+    --gallon-cap: #007AFF;
     --font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
 
     /* Palette from botol.png */
@@ -201,7 +203,7 @@ body {
 
 .hero-bottle-preview {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     margin: 20px 0 24px 0;
     justify-content: center;
     align-items: center;
@@ -353,51 +355,90 @@ body {
     align-items: center;
 }
 
-/* --- AUTHENTIC WATER SORT SLENDER TUBE / BOTTLE SHAPE (Ref: botol.png) --- */
+/* --- AUTHENTIC BULBOUS 19L GALLON SHAPE ("GEMUK") --- */
 .gallon {
-    width: var(--gallon-w, 48px);
-    height: var(--gallon-h, 140px);
-    border: 2px solid rgba(255, 255, 255, 0.45);
+    width: var(--gallon-w, 76px);
+    height: var(--gallon-h, 120px);
+    border: 2.5px solid var(--gallon-border);
     border-top: none;
-    border-bottom-left-radius: 24px;
-    border-bottom-right-radius: 24px;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
     background: var(--glass-bg);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column-reverse;
     justify-content: flex-start;
-    padding: 4px;
+    padding: 5px;
     cursor: pointer;
     position: relative;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     transform-origin: bottom center;
-    margin-top: 18px;
+    margin-top: 24px;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 }
 
-/* Flared Rim / Lip at the top of the glass tube */
+/* Gallon Narrow Neck */
 .gallon::before {
     content: '';
     position: absolute;
-    top: -10px;
+    top: -16px;
     left: 50%;
     transform: translateX(-50%);
-    width: calc(var(--gallon-w, 48px) * 0.7);
-    height: 10px;
+    width: 28px;
+    height: 16px;
     background: var(--glass-bg);
-    border: 2px solid rgba(255, 255, 255, 0.45);
+    border: 2.5px solid var(--gallon-border);
     border-bottom: none;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    pointer-events: none;
+}
+
+/* Gallon Blue Cap (19L Dispenser Cap) */
+.gallon::after {
+    content: '';
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 9px;
+    background: var(--gallon-cap);
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
     pointer-events: none;
 }
 
 .gallon.selected {
-    transform: translateY(-16px) scale(1.06);
+    transform: translateY(-18px) scale(1.06);
     border-color: #38BDF8;
-    box-shadow: 0 18px 36px rgba(56, 189, 248, 0.45);
+    box-shadow: 0 18px 36px rgba(56, 189, 248, 0.5);
+}
+
+/* Directional Pouring Animations */
+.gallon.pouring-left {
+    animation: pour-left 0.35s ease-in-out forwards;
+}
+
+@keyframes pour-left {
+    0% { transform: translateY(-18px) rotate(0deg) scale(1.06); }
+    40% { transform: translateY(-26px) rotate(-28deg) translateX(-14px) scale(1.02); }
+    70% { transform: translateY(-26px) rotate(-28deg) translateX(-14px) scale(1.02); }
+    100% { transform: translateY(-18px) rotate(0deg) scale(1.06); }
+}
+
+.gallon.pouring-right {
+    animation: pour-right 0.35s ease-in-out forwards;
+}
+
+@keyframes pour-right {
+    0% { transform: translateY(-18px) rotate(0deg) scale(1.06); }
+    40% { transform: translateY(-26px) rotate(28deg) translateX(14px) scale(1.02); }
+    70% { transform: translateY(-26px) rotate(28deg) translateX(14px) scale(1.02); }
+    100% { transform: translateY(-18px) rotate(0deg) scale(1.06); }
 }
 
 .gallon.completed {
@@ -413,13 +454,13 @@ body {
 .liquid-layer {
     width: 100%;
     height: 25%;
-    border-radius: 4px;
-    transition: height 0.2s ease;
+    border-radius: 6px;
+    transition: height 0.2s ease, transform 0.2s ease;
 }
 
 .liquid-layer:first-child {
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 32px;
+    border-bottom-right-radius: 32px;
 }
 
 /* Color Mappings (Matching botol.png Palette) */
@@ -433,6 +474,51 @@ body {
 .color-purple { background: var(--color-purple); box-shadow: inset 0 2px 4px rgba(255,255,255,0.35); }
 .color-orange { background: var(--color-orange); box-shadow: inset 0 2px 4px rgba(255,255,255,0.35); }
 .color-teal { background: var(--color-teal); box-shadow: inset 0 2px 4px rgba(255,255,255,0.35); }
+
+/* Toast Notification (Ref: 7. Bantuan & Feedback) */
+.toast-notification {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(17, 24, 39, 0.92);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    backdrop-filter: blur(16px);
+    padding: 12px 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 300;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-icon {
+    font-size: 1.4rem;
+}
+
+.toast-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.toast-text strong {
+    font-size: 0.85rem;
+    color: #F87171;
+}
+
+.toast-text span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
 
 /* Gameplay Dock / Powerups (Ref: 3. Gameplay bottom buttons: Undo, Pindah Warna, Tambah Slot) */
 .gameplay-dock {
@@ -924,36 +1010,51 @@ input:checked + .slider:before { transform: translateX(22px); }
     width: 100%;
 }
 
-.preview-tube {
-    width: 36px;
-    height: 75px;
-    border: 2px solid rgba(255,255,255,0.45);
+/* Preview Gallon on Home screen */
+.preview-gallon {
+    width: 54px;
+    height: 84px;
+    border: 2.5px solid var(--gallon-border);
     border-top: none;
-    border-bottom-left-radius: 18px;
-    border-bottom-right-radius: 18px;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
+    border-bottom-left-radius: 26px;
+    border-bottom-right-radius: 26px;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
     background: var(--glass-bg);
+    backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column-reverse;
-    padding: 3px;
+    padding: 4px;
     position: relative;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    margin-top: 16px;
 }
 
-.preview-tube::before {
+.preview-gallon::before {
     content: '';
     position: absolute;
-    top: -8px;
+    top: -12px;
     left: 50%;
     transform: translateX(-50%);
-    width: 24px;
-    height: 8px;
+    width: 20px;
+    height: 12px;
     background: var(--glass-bg);
-    border: 2px solid rgba(255,255,255,0.45);
+    border: 2.5px solid var(--gallon-border);
     border-bottom: none;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.preview-gallon::after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 7px;
+    background: var(--gallon-cap);
+    border-radius: 4px;
 }
 
 .daily-preview-box {
